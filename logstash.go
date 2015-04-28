@@ -13,7 +13,7 @@ func init() {
 	router.AdapterFactories.Register(NewLogstashAdapter, "logstash")
 }
 
-// LogstashAdapter is an adapter that streams UPD JSON to Logstash.
+// LogstashAdapter is an adapter that streams UDP JSON to Logstash.
 type LogstashAdapter struct {
 	conn  net.Conn
 	route *router.Route
