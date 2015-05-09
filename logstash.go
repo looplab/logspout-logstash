@@ -49,6 +49,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 				Hostname: m.Container.Config.Hostname,
 			},
 		}
+
 		js, err := json.Marshal(msg)
 		if err != nil {
 			log.Println("logstash:", err)
