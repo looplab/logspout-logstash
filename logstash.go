@@ -40,13 +40,29 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 // Stream implements the router.LogAdapter interface.
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 	for m := range logstream {
-		msg := LogstashMessage{
-			Message:  m.Data,
-			Name:     m.Container.Name,
-			ID:       m.Container.ID,
-			Image:    m.Container.Config.Image,
-			Hostname: m.Container.Config.Hostname,
+		var msg interface{}
+
+		var jsonMsg map[string]interface{}
+		err := json.Unmarshal([]byte(m.Data), &jsonMsg)
+		if err != nil {
+			// the message is not in JSON make a new JSON message
+			msg = LogstashMessage{
+				Message:  m.Data,
+				Name:     m.Container.Name,
+				ID:       m.Container.ID,
+				Image:    m.Container.Config.Image,
+				Hostname: m.Container.Config.Hostname,
+			}
+
+		} else {
+			// the message is already in JSON just add the docker specific fields
+			jsonMsg["docker.name"] = m.Container.Name
+			jsonMsg["docker.id"] = m.Container.ID
+			jsonMsg["docker.image"] = m.Container.Config.Image
+			jsonMsg["docker.hostname"] = m.Container.Config.Hostname
+			msg = jsonMsg
 		}
+
 		js, err := json.Marshal(msg)
 		if err != nil {
 			log.Println("logstash:", err)
