@@ -50,13 +50,13 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 	opt_string := getopt("OPTIONS", "")
-	var options *map[string]string
+	var options map[string]string
 
 	if opt_string != "" {
 		b := []byte(opt_string)
 
 		if err := json.Unmarshal(b, &options); err != nil {
-			options := &map[string]string
+			options := map[string]string{}
 		}
 	}
 
