@@ -41,7 +41,7 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 
 	return &LogstashAdapter{
 		route: route,
-		conn:  conn
+		conn:  conn,
 	}, nil
 }
 
@@ -50,7 +50,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 	opt_string := getopt("OPTIONS", "")
 	var options *map[string]string
-	
+
 	if opt_string != "" {
 		options := &map[string]string
 		b := []byte(opt_string)
@@ -68,7 +68,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Image:    m.Container.Config.Image,
 			Hostname: m.Container.Config.Hostname,
 			Args:     m.Container.Args,
-			Options:  options
+			Options:  options,
 		}
 		js, err := json.Marshal(msg)
 		if err != nil {
