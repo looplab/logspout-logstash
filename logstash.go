@@ -52,7 +52,6 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 	var options *map[string]string
 
 	if opt_string != "" {
-		options := &map[string]string
 		b := []byte(opt_string)
 
 		if err := json.Unmarshal(b, &options); err != nil {
@@ -85,11 +84,11 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 // LogstashMessage is a simple JSON input to Logstash.
 type LogstashMessage struct {
-	Message  string   `json:"message"`
-	Name     string   `json:"docker.name"`
-	ID       string   `json:"docker.id"`
-	Image    string   `json:"docker.image"`
-	Hostname string   `json:"docker.hostname"`
-	Args     []string `json:"docker.args,omitempty"`
-	Options  map[string]string   `json:"options,omitempty"`
+	Message  string            `json:"message"`
+	Name     string            `json:"docker.name"`
+	ID       string            `json:"docker.id"`
+	Image    string            `json:"docker.image"`
+	Hostname string            `json:"docker.hostname"`
+	Args     []string          `json:"docker.args,omitempty"`
+	Options  map[string]string `json:"options,omitempty"`
 }
