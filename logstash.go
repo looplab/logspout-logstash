@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net"
+	"os"
 
 	"github.com/gliderlabs/logspout/router"
 )
@@ -67,7 +68,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Image:    m.Container.Config.Image,
 			Hostname: m.Container.Config.Hostname,
 			Args:     m.Container.Args,
-			Options:  options,
+			Options:  *options,
 		}
 		js, err := json.Marshal(msg)
 		if err != nil {
