@@ -54,10 +54,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 	if opt_string != "" {
 		b := []byte(opt_string)
-
-		if err := json.Unmarshal(b, &options); err != nil {
-			options := nil
-		}
+		json.Unmarshal(b, &options)
 	}
 
 	for m := range logstream {
