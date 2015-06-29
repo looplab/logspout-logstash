@@ -57,6 +57,7 @@ func GetLogspoutOptionsString(env []string) string {
 			}
 		}
 	}
+	return nil
 }
 
 func UnmarshalOptions(opt_string string) map[string]string {
