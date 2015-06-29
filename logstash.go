@@ -91,11 +91,13 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		container_options := UnmarshalOptions(GetLogspoutOptionsString(m.Container.Config.Env))
 
 		// We give preference to the containers environment that is sending us the message
-		if options == nil {
-			options = container_options
-		} else if container_options != nil {
-			for k, v := range container_options {
-				options[k] = v
+		if container_options == nil {
+			container_options = options
+		} else if options != nil {
+			for k, v := range options {
+				if _, ok := container_options[k]; !ok {
+					container_options[k] = v
+				}
 			}
 		}
 
@@ -108,7 +110,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Args:       m.Container.Args,
 			Env:        m.Container.Config.Env,
 			InstanceId: instance_id,
-			Options:    options,
+			Options:    container_options,
 		}
 		js, err := json.Marshal(msg)
 		if err != nil {
