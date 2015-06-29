@@ -58,15 +58,23 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		json.Unmarshal(b, &options)
 	}
 
+	resp, err := http.Get("http://169.254.169.254/latest/meta-data/instance-id")
+	var instance_id string
+	if err == nil {
+		instance_id = resp.Body
+	}
+	resp.Body.Close()
+
 	for m := range logstream {
 		msg := LogstashMessage{
-			Message:  m.Data,
-			Name:     m.Container.Name,
-			ID:       m.Container.ID,
-			Image:    m.Container.Config.Image,
-			Hostname: m.Container.Config.Hostname,
-			Args:     m.Container.Args,
-			Options:  options,
+			Message:    m.Data,
+			Name:       m.Container.Name,
+			ID:         m.Container.ID,
+			Image:      m.Container.Config.Image,
+			Hostname:   m.Container.Config.Hostname,
+			Args:       m.Container.Args,
+			InstanceId: instance_id,
+			Options:    options,
 		}
 		js, err := json.Marshal(msg)
 		if err != nil {
