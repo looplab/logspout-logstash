@@ -78,6 +78,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Image:      m.Container.Config.Image,
 			Hostname:   m.Container.Config.Hostname,
 			Args:       m.Container.Args,
+			Env:        m.Container.Env,
 			InstanceId: instance_id,
 			Options:    options,
 		}
@@ -102,6 +103,7 @@ type LogstashMessage struct {
 	Image      string            `json:"docker.image"`
 	Hostname   string            `json:"docker.hostname"`
 	Args       []string          `json:"docker.args,omitempty"`
+	Env        []string          `json:"docker.env"`
 	Options    map[string]string `json:"options,omitempty"`
 	InstanceId string            `json:"instance-id,omitempty"`
 }
