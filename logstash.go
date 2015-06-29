@@ -3,6 +3,7 @@ package logstash
 import (
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -62,7 +63,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 	resp, err := http.Get("http://169.254.169.254/latest/meta-data/instance-id")
 	var instance_id string
 	if err == nil {
-		instance_id = resp.Body
+		instance_id, err := ioutil.ReadAll(response.Body)
 	}
 	resp.Body.Close()
 
