@@ -67,8 +67,8 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		if err == nil {
 			instance_id = string(value)
 		}
+		resp.Body.Close()
 	}
-	resp.Body.Close()
 
 	for m := range logstream {
 		msg := LogstashMessage{
