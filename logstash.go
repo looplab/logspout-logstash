@@ -49,7 +49,7 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 	}, nil
 }
 
-func GetLogspoutOptionsString(env []string) {
+func GetLogspoutOptionsString(env []string) string {
 	if env != nil {
 		for _, value := range env {
 			if strings.HasPrefix(value, "LOGSPOUT_OPTIONS=") {
@@ -59,7 +59,7 @@ func GetLogspoutOptionsString(env []string) {
 	}
 }
 
-func UnmarshalOptions(opt_string string) {
+func UnmarshalOptions(opt_string string) map[string]string {
 	var options map[string]string
 
 	if opt_string != "" {
