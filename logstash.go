@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gliderlabs/logspout/router"
 )
@@ -48,17 +49,32 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 	}, nil
 }
 
-// Stream implements the router.LogAdapter interface.
-func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
+func GetLogspoutOptionsString(env []string) {
+	if env != nil {
+		for _, value := range env {
+			if strings.HasPrefix(value, "LOGSPOUT_OPTIONS=") {
+				return strings.TrimPrefix(value, "LOGSPOUT_OPTIONS=")
+			}
+		}
+	}
+}
 
-	opt_string := getopt("OPTIONS", "")
+func UnmarshalOptions(opt_string string) {
 	var options map[string]string
 
 	if opt_string != "" {
 		b := []byte(opt_string)
 
 		json.Unmarshal(b, &options)
+		return options
 	}
+	return nil
+}
+
+// Stream implements the router.LogAdapter interface.
+func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
+
+	options := UnmarshalOptions(getopt("OPTIONS", ""))
 
 	resp, err := http.Get("http://169.254.169.254/latest/meta-data/instance-id")
 	instance_id := ""
@@ -71,6 +87,17 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 	}
 
 	for m := range logstream {
+		container_options := UnmarshalOptions(GetLogspoutOptionsString(m.Container.Config.Env))
+
+		// We give preference to the containers environment that is sending us the message
+		if options == nil {
+			options := container_options
+		} else if container_options != nil {
+			for k, v := range container_options {
+				options[k] = v
+			}
+		}
+
 		msg := LogstashMessage{
 			Message:    m.Data,
 			Name:       m.Container.Name,
