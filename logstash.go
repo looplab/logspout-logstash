@@ -61,9 +61,12 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 	}
 
 	resp, err := http.Get("http://169.254.169.254/latest/meta-data/instance-id")
-	var instance_id string
+	instance_id := ""
 	if err == nil {
-		instance_id, err := ioutil.ReadAll(resp.Body)
+		value, err := ioutil.ReadAll(resp.Body)
+		if err == nil {
+			instance_id = instance_id
+		}
 	}
 	resp.Body.Close()
 
@@ -100,5 +103,5 @@ type LogstashMessage struct {
 	Hostname   string            `json:"docker.hostname"`
 	Args       []string          `json:"docker.args,omitempty"`
 	Options    map[string]string `json:"options,omitempty"`
-	InstanceId string            `json:"instance-id"`
+	InstanceId string            `json:"instance-id,omitempty"`
 }
