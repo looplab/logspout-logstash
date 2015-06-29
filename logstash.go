@@ -65,7 +65,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 	if err == nil {
 		value, err := ioutil.ReadAll(resp.Body)
 		if err == nil {
-			instance_id = instance_id
+			instance_id = value
 		}
 	}
 	resp.Body.Close()
