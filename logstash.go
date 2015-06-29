@@ -92,7 +92,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 		// We give preference to the containers environment that is sending us the message
 		if options == nil {
-			options := container_options
+			options = container_options
 		} else if container_options != nil {
 			for k, v := range container_options {
 				options[k] = v
