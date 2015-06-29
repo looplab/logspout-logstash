@@ -57,13 +57,13 @@ func GetLogspoutOptionsString(env []string) string {
 			}
 		}
 	}
-	return nil
+	return ""
 }
 
 func UnmarshalOptions(opt_string string) map[string]string {
 	var options map[string]string
 
-	if opt_string != "" {
+	if opt_string != nil && opt_string != "" {
 		b := []byte(opt_string)
 
 		json.Unmarshal(b, &options)
