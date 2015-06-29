@@ -78,7 +78,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Image:      m.Container.Config.Image,
 			Hostname:   m.Container.Config.Hostname,
 			Args:       m.Container.Args,
-			Env:        m.Container.Env,
+			Env:        m.Container.Config.Env,
 			InstanceId: instance_id,
 			Options:    options,
 		}
