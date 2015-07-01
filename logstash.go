@@ -119,10 +119,11 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		_, err = a.conn.Write(js)
 		if err != nil {
 
-			a.conn, err := transport.Dial(a.route.Address, a.route.Options)
+			conn, err := transport.Dial(a.route.Address, a.route.Options)
 			if err != nil {
 				log.Fatal("logstash:", err)
 			}
+			a.conn = conn
 		}
 	}
 }
