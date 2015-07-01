@@ -119,6 +119,9 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		_, err = a.conn.Write(js)
 		if err != nil {
 			transport, found := router.AdapterTransports.Lookup(a.route.AdapterTransport("udp"))
+			if !found {
+				log.Fatal("unable to find adapter: " + a.route.Adapter)
+			}
 			conn, err := transport.Dial(a.route.Address, a.route.Options)
 			if err != nil {
 				log.Fatal("logstash:", err)
