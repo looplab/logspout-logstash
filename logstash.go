@@ -127,6 +127,10 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 				log.Fatal("logstash:", err)
 			}
 			a.conn = conn
+			_, err = a.conn.Write(js)
+			if err != nil {
+				log.Fatal("logstash - failure after reconnect:", err)
+			}
 		}
 	}
 }
