@@ -35,12 +35,12 @@ func getopt(name, dfault string) string {
 func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 	transport, found := router.AdapterTransports.Lookup(route.AdapterTransport("udp"))
 	if !found {
-		return nil, errors.New("unable to find adapter: " + route.Adapter)
+		log.Fatal("Could not find udp transport for logstash module")
 	}
 
 	conn, err := transport.Dial(route.Address, route.Options)
 	if err != nil {
-		return nil, err
+		log.Fatal("Error dialing logstash address endpoint:", err)
 	}
 
 	return &LogstashAdapter{
