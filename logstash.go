@@ -2,7 +2,6 @@ package logstash
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"log"
 	"net"
