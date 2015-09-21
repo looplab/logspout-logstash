@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
+	"github.com/benschw/dns-clb-go/clb"
 	"github.com/gliderlabs/logspout/router"
 )
 
@@ -18,8 +18,9 @@ func init() {
 
 // LogstashAdapter is an adapter that streams UDP JSON to Logstash.
 type LogstashAdapter struct {
-	conn  net.Conn
-	route *router.Route
+	c 		clb
+	conn	net.Conn
+	route	*router.Route
 }
 
 func getopt(name, dfault string) string {
@@ -37,14 +38,22 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 		log.Fatal("Could not find udp transport for logstash module")
 	}
 
-	conn, err := transport.Dial(route.Address, route.Options)
+	c := clb.New()
+
+	address, err := c.GetAddress(route.Address)
+	if err != nil {
+	    panic(err)
+	}
+
+	conn, err := transport.Dial(address, route.Options)
 	if err != nil {
 		log.Fatal("Error dialing logstash address endpoint:", err)
 	}
 
 	return &LogstashAdapter{
-		route: route,
-		conn:  conn,
+		route:	route,
+		conn:	conn,
+		c:		c
 	}, nil
 }
 
@@ -115,13 +124,24 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			log.Println("logstash:", err)
 			continue
 		}
+
+		address, err := c.GetAddress(route.Address)
+		if err != nil {
+			log.Fatal("Could not resolve address for remote host", err)
+		}
+
+		if a.conn.RemoteAddr() != address {
+			log.Println("Resolved address for remote host and connected address have changed. Updating to use new DNS resolution.")
+			conn, err := transport.Dial(a.route.Address, a.route.Options)
+		}
+
 		_, err = a.conn.Write(js)
 		if err != nil {
 			transport, found := router.AdapterTransports.Lookup(a.route.AdapterTransport("udp"))
 			if !found {
 				log.Fatal("unable to find adapter: " + a.route.Adapter)
 			}
-			conn, err := transport.Dial(a.route.Address, a.route.Options)
+			conn, err := transport.Dial(address, a.route.Options)
 			if err != nil {
 				log.Fatal("logstash:", err)
 			}
