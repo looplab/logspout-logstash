@@ -47,7 +47,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			ID:       m.Container.ID,
 			Image:    m.Container.Config.Image,
 			Hostname: m.Container.Config.Hostname,
-			Labels:   m.Container.Config.Labels
+			Labels:   m.Container.Config.Labels,
 		}
 		js, err := json.Marshal(msg)
 		if err != nil {
