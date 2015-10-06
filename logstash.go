@@ -46,6 +46,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			ID:       m.Container.ID,
 			Image:    m.Container.Config.Image,
 			Hostname: m.Container.Config.Hostname,
+			Command:  m.Container.Config.Cmd,
 		}
 		js, err := json.Marshal(msg)
 		if err != nil {
@@ -67,4 +68,5 @@ type LogstashMessage struct {
 	ID       string `json:"docker.id"`
 	Image    string `json:"docker.image"`
 	Hostname string `json:"docker.hostname"`
+	Command  string `json:"docker.command"`
 }
