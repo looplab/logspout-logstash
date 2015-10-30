@@ -14,7 +14,7 @@ func init() {
 	router.AdapterFactories.Register(NewLogstashAdapter, "logstash")
 }
 
-// LogstashAdapter is an adapter that streams UDP JSON to Logstash.
+// LogstashAdapter is an adapter that streams TCP JSON to Logstash.
 type LogstashAdapter struct {
 	conn  net.Conn
 	route *router.Route
@@ -22,7 +22,7 @@ type LogstashAdapter struct {
 
 // NewLogstashAdapter creates a LogstashAdapter with UDP as the default transport.
 func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
-	transport, found := router.AdapterTransports.Lookup(route.AdapterTransport("udp"))
+	transport, found := router.AdapterTransports.Lookup(route.AdapterTransport("tcp"))
 	if !found {
 		return nil, errors.New("unable to find adapter: " + route.Adapter)
 	}

@@ -12,12 +12,12 @@ import (
 
 in modules.go.
 
-Use by setting `ROUTE_URIS=logstash://host:port` to the Logstash host and port for UDP.
+Use by setting `ROUTE_URIS=logstash://host:port` to the Logstash host and port for TCP.
 
 In your logstash config, set the input codec to `json` e.g:
 
 input {
-  udp {
+  tcp {
     port => 5000
     codec => json
   }
