@@ -54,8 +54,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			log.Println("logstash:", err)
 			continue
 		}
-		js.WriteString("\n")
-		_, err = a.conn.Write(js)
+		_, err = a.conn.Write(append(js, []byte("\n")))
 		if err != nil {
 			log.Println("fatal logstash:", err)
 			os.Exit(3)
