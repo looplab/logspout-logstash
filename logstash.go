@@ -20,7 +20,7 @@ type LogstashAdapter struct {
 	route *router.Route
 }
 
-// NewLogstashAdapter creates a LogstashAdapter with UDP as the default transport.
+// NewLogstashAdapter creates a LogstashAdapter with TCP as the default transport.
 func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 	transport, found := router.AdapterTransports.Lookup(route.AdapterTransport("tcp"))
 	if !found {
@@ -54,7 +54,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			log.Println("logstash:", err)
 			continue
 		}
-		_, err = a.conn.Write(js)
+		_, err = a.conn.Write(js + "\n")
 		if err != nil {
 			log.Println("fatal logstash:", err)
 			os.Exit(3)
