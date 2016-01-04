@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net"
+	"os"
 
 	"github.com/gliderlabs/logspout/router"
 )
@@ -56,8 +57,8 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		}
 		_, err = a.conn.Write(js)
 		if err != nil {
-			log.Println("logstash:", err)
-			continue
+			log.Println("fatal logstash:", err)
+			os.Exit(3)
 		}
 	}
 }
