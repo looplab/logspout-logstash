@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/gliderlabs/logspout/router"
@@ -42,7 +43,7 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 	for m := range logstream {
 		dockerInfo := DockerInfo{
-			Name:     m.Container.Name,
+			Name:     strings.Trim(m.Container.Name, "/"),
 			ID:       m.Container.ID,
 			Image:    m.Container.Config.Image,
 			Hostname: m.Container.Config.Hostname,
@@ -94,5 +95,5 @@ type LogstashMessage struct {
 	Message   string     `json:"message"`
 	Docker    DockerInfo `json:"docker"`
 	Source    string     `json:"source"`
-	Timestamp time.Time  `json:"timestamp"`
+	Timestamp time.Time  `json:"@timestamp"`
 }
