@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net"
+	"time"
 
 	"github.com/gliderlabs/logspout/router"
 )
@@ -53,8 +54,10 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		if err != nil {
 			// the message is not in JSON make a new JSON message
 			msg := LogstashMessage{
-				Message: m.Data,
-				Docker:  dockerInfo,
+				Message:   m.Data,
+				Docker:    dockerInfo,
+				Source:    m.Source,
+				Timestamp: m.Time,
 			}
 			js, err = json.Marshal(msg)
 			if err != nil {
@@ -88,6 +91,8 @@ type DockerInfo struct {
 
 // LogstashMessage is a simple JSON input to Logstash.
 type LogstashMessage struct {
-	Message string     `json:"message"`
-	Docker  DockerInfo `json:"docker"`
+	Message   string     `json:"message"`
+	Docker    DockerInfo `json:"docker"`
+	Source    string     `json:"source"`
+	Timestamp time.Time  `json:"timestamp"`
 }
