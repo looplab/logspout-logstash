@@ -48,33 +48,33 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Image:    m.Container.Config.Image,
 			Hostname: m.Container.Config.Hostname,
 		}
-		var js []byte
+		//var js []byte
 
-		var jsonMsg map[string]interface{}
-		err := json.Unmarshal([]byte(m.Data), &jsonMsg)
-		if err != nil {
-			// the message is not in JSON make a new JSON message
-			msg := LogstashMessage{
-				Message:   m.Data,
-				Docker:    dockerInfo,
-				Source:    m.Source,
-				Timestamp: m.Time,
-			}
-			js, err = json.Marshal(msg)
-			if err != nil {
-				log.Println("logstash:", err)
-				continue
-			}
-		} else {
-			// the message is already in JSON just add the docker specific fields as a nested structure
-			jsonMsg["docker"] = dockerInfo
-
-			js, err = json.Marshal(jsonMsg)
-			if err != nil {
-				log.Println("logstash:", err)
-				continue
-			}
+		//var jsonMsg map[string]interface{}
+		//err := json.Unmarshal([]byte(m.Data), &jsonMsg)
+		//if err != nil {
+		// the message is not in JSON make a new JSON message
+		msg := LogstashMessage{
+			Message:   m.Data,
+			Docker:    dockerInfo,
+			Source:    m.Source,
+			Timestamp: m.Time,
 		}
+		js, err := json.Marshal(msg)
+		if err != nil {
+			log.Println("logstash:", err)
+			continue
+		}
+		// } else {
+		// 	// the message is already in JSON just add the docker specific fields as a nested structure
+		// 	jsonMsg["docker"] = dockerInfo
+
+		// 	js, err = json.Marshal(jsonMsg)
+		// 	if err != nil {
+		// 		log.Println("logstash:", err)
+		// 		continue
+		// 	}
+		// }
 		_, err = a.conn.Write(js)
 		if err != nil {
 			log.Println("logstash:", err)
