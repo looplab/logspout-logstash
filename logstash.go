@@ -95,5 +95,5 @@ type LogstashMessage struct {
 	Message   string     `json:"message"`
 	Docker    DockerInfo `json:"docker"`
 	Source    string     `json:"source"`
-	Timestamp time.Time  `json:"timestamp"`
+	Timestamp time.Time  `json:"@timestamp"`
 }
