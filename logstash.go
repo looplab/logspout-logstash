@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -55,7 +56,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		//if err != nil {
 		// the message is not in JSON make a new JSON message
 		msg := LogstashMessage{
-			Message:   m.Data,
+			Message:   strconv.Quote(m.Data),
 			Docker:    dockerInfo,
 			Source:    m.Source,
 			Timestamp: m.Time,
