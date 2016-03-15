@@ -58,7 +58,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Name:     strings.Trim(m.Container.Name, "/"),
 			ID:       m.Container.ID,
 			Image:    m.Container.Config.Image,
-			Hostname: a.hostname,
+			Hostname: m.Container.Config.Hostname,
 		}
 		//var js []byte
 
@@ -70,6 +70,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Message:   strconv.Quote(m.Data),
 			Docker:    dockerInfo,
 			Source:    m.Source,
+			Node:      a.hostname,
 			Timestamp: m.Time,
 		}
 		js, err := json.Marshal(msg)
@@ -107,5 +108,6 @@ type LogstashMessage struct {
 	Message   string     `json:"message"`
 	Docker    DockerInfo `json:"docker"`
 	Source    string     `json:"source"`
+	Node      string     `json:"node"`
 	Timestamp time.Time  `json:"@timestamp"`
 }
