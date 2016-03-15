@@ -3,6 +3,7 @@ package logstash
 import (
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"log"
 	"net"
 	"strconv"
@@ -18,8 +19,9 @@ func init() {
 
 // LogstashAdapter is an adapter that streams UDP JSON to Logstash.
 type LogstashAdapter struct {
-	conn  net.Conn
-	route *router.Route
+	conn     net.Conn
+	route    *router.Route
+	hostname string
 }
 
 // NewLogstashAdapter creates a LogstashAdapter with UDP as the default transport.
@@ -33,10 +35,19 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 	if err != nil {
 		return nil, err
 	}
+	var hostname string
+	content, err := ioutil.ReadFile("/etc/hostname")
+	if err != nil {
+		log.Println("Could not read hostname, using default 'unknown'")
+		hostname = "unknown"
+	} else {
+		hostname = string(content)
+	}
 
 	return &LogstashAdapter{
-		route: route,
-		conn:  conn,
+		route:    route,
+		conn:     conn,
+		hostname: hostname,
 	}, nil
 }
 
@@ -47,7 +58,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Name:     strings.Trim(m.Container.Name, "/"),
 			ID:       m.Container.ID,
 			Image:    m.Container.Config.Image,
-			Hostname: m.Container.Config.Hostname,
+			Hostname: a.hostname,
 		}
 		//var js []byte
 
