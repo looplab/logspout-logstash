@@ -104,5 +104,5 @@ type DockerInfo struct {
 type LogstashMessage struct {
 	Message string     `json:"message"`
 	Docker  DockerInfo `json:"docker"`
-	Token		string		 `json:"token"`
+	Token   string     `json:"token"`
 }
