@@ -59,7 +59,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			}
 			js, err = json.Marshal(msg)
 			if err != nil {
-				log.Println("logstash-ye1:", err)
+				log.Println("logstash:", err)
 				continue
 			}
 		} else {
@@ -68,7 +68,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 			js, err = json.Marshal(jsonMsg)
 			if err != nil {
-				log.Println("logstash-ye2:", err)
+				log.Println("logstash:", err)
 				continue
 			}
 		}
