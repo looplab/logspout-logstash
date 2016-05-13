@@ -16,10 +16,11 @@ Use by setting `ROUTE_URIS=logstash://host:port` to the Logstash host and port f
 
 In your logstash config, set the input codec to `json` e.g:
 
+```
 input {
   udp {
     port => 5000
     codec => json
   }
 }
-
+```

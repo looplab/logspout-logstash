@@ -40,18 +40,37 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 // Stream implements the router.LogAdapter interface.
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 	for m := range logstream {
-		msg := LogstashMessage{
-			Message:  m.Data,
+		dockerInfo := DockerInfo{
 			Name:     m.Container.Name,
 			ID:       m.Container.ID,
 			Image:    m.Container.Config.Image,
 			Hostname: m.Container.Config.Hostname,
-			Stream:   m.Source,
 		}
-		js, err := json.Marshal(msg)
+		var js []byte
+
+		var jsonMsg map[string]interface{}
+		err := json.Unmarshal([]byte(m.Data), &jsonMsg)
 		if err != nil {
-			log.Println("logstash:", err)
-			continue
+			// the message is not in JSON make a new JSON message
+			msg := LogstashMessage{
+				Message: m.Data,
+				Docker:  dockerInfo,
+				Stream:  m.Source,
+			}
+			js, err = json.Marshal(msg)
+			if err != nil {
+				log.Println("logstash:", err)
+				continue
+			}
+		} else {
+			// the message is already in JSON just add the docker specific fields as a nested structure
+			jsonMsg["docker"] = dockerInfo
+
+			js, err = json.Marshal(jsonMsg)
+			if err != nil {
+				log.Println("logstash:", err)
+				continue
+			}
 		}
 		_, err = a.conn.Write(js)
 		if err != nil {
@@ -61,12 +80,16 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 	}
 }
 
+type DockerInfo struct {
+	Name     string `json:"name"`
+	ID       string `json:"id"`
+	Image    string `json:"image"`
+	Hostname string `json:"hostname"`
+}
+
 // LogstashMessage is a simple JSON input to Logstash.
 type LogstashMessage struct {
-	Message  string `json:"message"`
-	Name     string `json:"docker.name"`
-	ID       string `json:"docker.id"`
-	Image    string `json:"docker.image"`
-	Hostname string `json:"docker.hostname"`
-	Stream   string `json:"stream"`
+	Message string     `json:"message"`
+	Stream  string     `json:"stream"`
+	Docker  DockerInfo `json:"docker"`
 }
