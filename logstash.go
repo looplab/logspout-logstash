@@ -55,6 +55,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			msg := LogstashMessage{
 				Message: m.Data,
 				Docker:  dockerInfo,
+				Stream:  m.Source,
 			}
 			js, err = json.Marshal(msg)
 			if err != nil {
@@ -89,5 +90,6 @@ type DockerInfo struct {
 // LogstashMessage is a simple JSON input to Logstash.
 type LogstashMessage struct {
 	Message string     `json:"message"`
+	Stream  string     `json:"stream"`
 	Docker  DockerInfo `json:"docker"`
 }
