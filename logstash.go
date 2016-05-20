@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net"
+	"os"
 
 	"github.com/gliderlabs/logspout/router"
 )
@@ -17,6 +18,7 @@ func init() {
 type LogstashAdapter struct {
 	conn  net.Conn
 	route *router.Route
+	token string
 }
 
 // NewLogstashAdapter creates a LogstashAdapter with UDP as the default transport.
@@ -31,9 +33,12 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 		return nil, err
 	}
 
+	token := os.Getenv("LOGSTASH_TOKEN")
+
 	return &LogstashAdapter{
 		route: route,
 		conn:  conn,
+		token: token,
 	}, nil
 }
 
@@ -57,6 +62,11 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 				Docker:  dockerInfo,
 				Stream:  m.Source,
 			}
+
+			if a.token != "" {
+				msg.Token = a.token
+			}
+
 			js, err = json.Marshal(msg)
 			if err != nil {
 				log.Println("logstash:", err)
@@ -65,6 +75,10 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		} else {
 			// the message is already in JSON just add the docker specific fields as a nested structure
 			jsonMsg["docker"] = dockerInfo
+
+			if a.token != "" {
+				jsonMsg["token"] = a.token
+			}
 
 			js, err = json.Marshal(jsonMsg)
 			if err != nil {
@@ -92,4 +106,5 @@ type LogstashMessage struct {
 	Message string     `json:"message"`
 	Stream  string     `json:"stream"`
 	Docker  DockerInfo `json:"docker"`
+	Token   string     `json:"token"`
 }
