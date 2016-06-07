@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log"
 	"net"
-
+	"os"
 	"github.com/gliderlabs/logspout/router"
 )
 
@@ -13,10 +13,19 @@ func init() {
 	router.AdapterFactories.Register(NewLogstashAdapter, "logstash")
 }
 
+func getopt(name, dfault string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		value = dfault
+	}
+	return value
+}
+
 // LogstashAdapter is an adapter that streams UDP JSON to Logstash.
 type LogstashAdapter struct {
 	conn  net.Conn
 	route *router.Route
+	tag   string
 }
 
 // NewLogstashAdapter creates a LogstashAdapter with UDP as the default transport.
@@ -27,6 +36,8 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 	}
 
 	conn, err := transport.Dial(route.Address, route.Options)
+	tag := getopt("LOGSTASH_TAG", "{{.ContainerName}}"+route.Options["append_tag"])
+	
 	if err != nil {
 		return nil, err
 	}
@@ -34,6 +45,7 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 	return &LogstashAdapter{
 		route: route,
 		conn:  conn,
+		tag:   tag,
 	}, nil
 }
 
@@ -45,6 +57,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			ID:       m.Container.ID,
 			Image:    m.Container.Config.Image,
 			Hostname: m.Container.Config.Hostname,
+			Tag:      a.tag
 		}
 		var js []byte
 
@@ -85,6 +98,7 @@ type DockerInfo struct {
 	ID       string `json:"id"`
 	Image    string `json:"image"`
 	Hostname string `json:"hostname"`
+	Tag      string `json:"tag"`
 }
 
 // LogstashMessage is a simple JSON input to Logstash.
