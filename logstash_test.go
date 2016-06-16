@@ -2,12 +2,13 @@ package logstash
 
 import (
 	"encoding/json"
-	"github.com/fsouza/go-dockerclient"
-	"github.com/gliderlabs/logspout/router"
-	"github.com/stretchr/testify/assert"
 	"net"
 	"testing"
 	"time"
+
+	"github.com/fsouza/go-dockerclient"
+	"github.com/gliderlabs/logspout/router"
+	"github.com/stretchr/testify/assert"
 )
 
 var res string
