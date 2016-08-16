@@ -5,6 +5,9 @@ import (
 	"errors"
 	"log"
 	"net"
+	"os"
+	"regexp"
+	"strings"
 
 	"github.com/gliderlabs/logspout/router"
 )
@@ -17,6 +20,25 @@ func init() {
 type LogstashAdapter struct {
 	conn  net.Conn
 	route *router.Route
+}
+
+func getopt(name, dfault string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		return dfault
+	}
+	return value
+}
+
+func strToSlice(str, delimiter string) []string {
+	var sliceStr []string
+	matched, _ := regexp.MatchString(delimiter, str)
+	if matched == true {
+		sliceStr = strings.Split(str, delimiter)
+	} else {
+		sliceStr = []string{str}
+	}
+	return sliceStr
 }
 
 // NewLogstashAdapter creates a LogstashAdapter with UDP as the default transport.
@@ -39,7 +61,12 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 
 // Stream implements the router.LogAdapter interface.
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
+
+	strTags := getopt("LOGSTASH_TAGS", "")
+	tags := strToSlice(strTags, ",")
+
 	for m := range logstream {
+
 		dockerInfo := DockerInfo{
 			Name:     m.Container.Name,
 			ID:       m.Container.ID,
@@ -49,31 +76,41 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 		var js []byte
 		var data map[string]interface{}
+
+		// Parse JSON-encoded m.Data
 		if err := json.Unmarshal([]byte(m.Data), &data); err != nil {
 			// The message is not in JSON, make a new JSON message.
 			msg := LogstashMessage{
 				Message: m.Data,
 				Docker:  dockerInfo,
 				Stream:  m.Source,
+				Tags:    tags,
 			}
+
 			if js, err = json.Marshal(msg); err != nil {
-				log.Println("logstash:", err)
+				// Log error message and continue parsing next line, if marshalling fails
+				log.Println("logstash: could not marshal JSON:", err)
 				continue
 			}
 		} else {
 			// The message is already in JSON, add the docker specific fields.
 			data["docker"] = dockerInfo
+			data["tags"] = tags
+			data["stream"] = m.Source
+			// Return the JSON encoding
 			if js, err = json.Marshal(data); err != nil {
-				log.Println("logstash:", err)
+				// Log error message and continue parsing next line, if marshalling fails
+				log.Println("logstash: could not marshal JSON:", err)
 				continue
 			}
 		}
 
-		// to work with tls and tcp transports via json_lines codec
+		// To work with tls and tcp transports via json_lines codec
 		js = append(js, byte('\n'))
 
 		if _, err := a.conn.Write(js); err != nil {
-			log.Fatal("logstash:", err)
+			// There is no retry option implemented yet
+			log.Fatal("logstash: could not write:", err)
 		}
 	}
 }
@@ -90,4 +127,5 @@ type LogstashMessage struct {
 	Message string     `json:"message"`
 	Stream  string     `json:"stream"`
 	Docker  DockerInfo `json:"docker"`
+	Tags    []string   `json:"tags"`
 }
