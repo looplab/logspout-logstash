@@ -7,6 +7,7 @@ import (
 	"net"
 	"strings"
 
+	"github.com/fsouza/go-dockerclient"
 	"github.com/gliderlabs/logspout/router"
 )
 
@@ -16,8 +17,9 @@ func init() {
 
 // LogstashAdapter is an adapter that streams UDP JSON to Logstash.
 type LogstashAdapter struct {
-	conn  net.Conn
-	route *router.Route
+	conn          net.Conn
+	route         *router.Route
+	containerTags map[string][]string
 }
 
 // NewLogstashAdapter creates a LogstashAdapter with UDP as the default transport.
@@ -33,31 +35,25 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 	}
 
 	return &LogstashAdapter{
-		route: route,
-		conn:  conn,
+		route:         route,
+		conn:          conn,
+		containerTags: make(map[string][]string),
 	}, nil
 }
 
-// Returns a new slice containing all strings in the slice that satisfy the predicate f.
-func Filter(vs []string, f func(string) bool) []string {
-	vsf := make([]string, 0)
-	for _, v := range vs {
-		if f(v) {
-			vsf = append(vsf, v)
-		}
-	}
-	return vsf
-}
-
 // Get container tags configured with the environment variable LOGSTASH_TAGS
-func GetContainerTags(containerEnv []string) []string {
-	tagsStringSlice := Filter(containerEnv, func(v string) bool {
-		return strings.HasPrefix(v, "LOGSTASH_TAGS=")
-	})
-
+func GetContainerTags(c *docker.Container, a *LogstashAdapter) []string {
 	var tags []string
-	if len(tagsStringSlice) == 1 {
-		tags = strings.Split(strings.TrimPrefix(tagsStringSlice[0], "LOGSTASH_TAGS="), ",")
+	if val, ok := a.containerTags[c.ID]; ok {
+		tags = val
+	} else {
+		for _, e := range c.Config.Env {
+			if strings.HasPrefix(e, "LOGSTASH_TAGS=") {
+				tags = strings.Split(strings.TrimPrefix(e, "LOGSTASH_TAGS="), ",")
+				break
+			}
+		}
+		a.containerTags[c.ID] = tags
 	}
 	return tags
 }
@@ -74,7 +70,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Hostname: m.Container.Config.Hostname,
 		}
 
-		tags := GetContainerTags(m.Container.Config.Env)
+		tags := GetContainerTags(m.Container, a)
 
 		var js []byte
 		var data map[string]interface{}
