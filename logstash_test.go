@@ -66,6 +66,7 @@ func TestStreamNotJson(t *testing.T) {
 	containerConfig := docker.Config{}
 	containerConfig.Image = "image"
 	containerConfig.Hostname = "hostname"
+	containerConfig.Env = []string{"LOGSTASH_TAGS=example,tags", "NON_LOGSTASH_TAGS=not,logstash"}
 
 	container := docker.Container{}
 	container.Name = "name"
@@ -93,6 +94,7 @@ func TestStreamNotJson(t *testing.T) {
 	assert.Nil(err)
 
 	assert.Equal("foo bananas", data["message"])
+	assert.Equal([]interface {}{"example", "tags"}, data["tags"])
 
 	var dockerInfo map[string]interface{}
 	dockerInfo = data["docker"].(map[string]interface{})
@@ -119,6 +121,7 @@ func TestStreamJson(t *testing.T) {
 	containerConfig := docker.Config{}
 	containerConfig.Image = "image"
 	containerConfig.Hostname = "hostname"
+	containerConfig.Env = []string{"LOGSTASH_TAGS=example,tags", "NON_LOGSTASH_TAGS=not,logstash"}
 
 	container := docker.Container{}
 	container.Name = "name"
@@ -152,6 +155,7 @@ func TestStreamJson(t *testing.T) {
 	assert.Equal("POST", data["request_method"])
 	assert.Equal("-", data["http_referrer"])
 	assert.Equal("-", data["http_user_agent"])
+	assert.Equal([]interface {}{"example", "tags"}, data["tags"])
 
 	var dockerInfo map[string]interface{}
 	dockerInfo = data["docker"].(map[string]interface{})

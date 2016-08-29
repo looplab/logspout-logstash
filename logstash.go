@@ -5,8 +5,6 @@ import (
 	"errors"
 	"log"
 	"net"
-	"os"
-	"regexp"
 	"strings"
 
 	"github.com/gliderlabs/logspout/router"
@@ -20,25 +18,6 @@ func init() {
 type LogstashAdapter struct {
 	conn  net.Conn
 	route *router.Route
-}
-
-func getopt(name, dfault string) string {
-	value := os.Getenv(name)
-	if value == "" {
-		return dfault
-	}
-	return value
-}
-
-func strToSlice(str, delimiter string) []string {
-	var sliceStr []string
-	matched, _ := regexp.MatchString(delimiter, str)
-	if matched == true {
-		sliceStr = strings.Split(str, delimiter)
-	} else {
-		sliceStr = []string{str}
-	}
-	return sliceStr
 }
 
 // NewLogstashAdapter creates a LogstashAdapter with UDP as the default transport.
@@ -59,11 +38,32 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 	}, nil
 }
 
+// Returns a new slice containing all strings in the slice that satisfy the predicate f.
+func Filter(vs []string, f func(string) bool) []string {
+	vsf := make([]string, 0)
+	for _, v := range vs {
+		if f(v) {
+			vsf = append(vsf, v)
+		}
+	}
+	return vsf
+}
+
+// Get container tags configured with the environment variable LOGSTASH_TAGS
+func GetContainerTags(containerEnv []string) []string {
+	tagsStringSlice := Filter(containerEnv, func(v string) bool {
+		return strings.HasPrefix(v, "LOGSTASH_TAGS=")
+	})
+
+	var tags []string
+	if len(tagsStringSlice) == 1 {
+		tags = strings.Split(strings.TrimPrefix(tagsStringSlice[0], "LOGSTASH_TAGS="), ",")
+	}
+	return tags
+}
+
 // Stream implements the router.LogAdapter interface.
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
-
-	strTags := getopt("LOGSTASH_TAGS", "")
-	tags := strToSlice(strTags, ",")
 
 	for m := range logstream {
 
@@ -73,6 +73,8 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Image:    m.Container.Config.Image,
 			Hostname: m.Container.Config.Hostname,
 		}
+
+		tags := GetContainerTags(m.Container.Config.Env)
 
 		var js []byte
 		var data map[string]interface{}
