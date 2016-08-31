@@ -43,18 +43,19 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 
 // Get container tags configured with the environment variable LOGSTASH_TAGS
 func GetContainerTags(c *docker.Container, a *LogstashAdapter) []string {
-	var tags []string
-	if val, ok := a.containerTags[c.ID]; ok {
-		tags = val
-	} else {
-		for _, e := range c.Config.Env {
-			if strings.HasPrefix(e, "LOGSTASH_TAGS=") {
-				tags = strings.Split(strings.TrimPrefix(e, "LOGSTASH_TAGS="), ",")
-				break
-			}
-		}
-		a.containerTags[c.ID] = tags
+	if tags, ok := a.containerTags[c.ID]; ok {
+		return tags
 	}
+
+	var tags = []string{}
+	for _, e := range c.Config.Env {
+		if strings.HasPrefix(e, "LOGSTASH_TAGS=") {
+			tags = strings.Split(strings.TrimPrefix(e, "LOGSTASH_TAGS="), ",")
+			break
+		}
+	}
+
+	a.containerTags[c.ID] = tags
 	return tags
 }
 

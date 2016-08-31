@@ -95,7 +95,7 @@ func TestStreamNotJsonWithoutLogstashTags(t *testing.T) {
 	assert.Nil(err)
 
 	assert.Equal("foo bananas", data["message"])
-	assert.Equal(nil, data["tags"])
+	assert.Equal([]interface{}{}, data["tags"])
 
 	var dockerInfo map[string]interface{}
 	dockerInfo = data["docker"].(map[string]interface{})
@@ -213,7 +213,7 @@ func TestStreamJsonWithoutLogstashTags(t *testing.T) {
 	assert.Equal("POST", data["request_method"])
 	assert.Equal("-", data["http_referrer"])
 	assert.Equal("-", data["http_user_agent"])
-	assert.Equal(nil, data["tags"])
+	assert.Equal([]interface{}{}, data["tags"])
 
 	var dockerInfo map[string]interface{}
 	dockerInfo = data["docker"].(map[string]interface{})
