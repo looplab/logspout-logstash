@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log"
 	"net"
-	"os"
 	"regexp"
 	"strings"
 
@@ -64,7 +63,7 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 	for m := range logstream {
-   		var strTags strings
+		strTags := ""
 		for _, kv := range m.Container.Config.Env {
 			kvp := strings.SplitN(kv, "=", 2)
 			if len(kvp) == 2 && kvp[0] == "LOGSTASH_TAGS"  {
