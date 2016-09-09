@@ -31,7 +31,7 @@ func getopt(name, dfault string) string {
 		}
 	}
 
-	#value := os.Getenv(name)
+	value := os.Getenv(name)
 	if value == "" {
 		return dfault
 	}
