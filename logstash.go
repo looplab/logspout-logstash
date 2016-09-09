@@ -23,7 +23,15 @@ type LogstashAdapter struct {
 }
 
 func getopt(name, dfault string) string {
-	value := os.Getenv(name)
+
+	for _, kv := range container.Config.Env {
+		kvp := strings.SplitN(kv, "=", 2)
+		if len(kvp) == 2 && kvp[0] == "LOGSTASH_TAGS"  {
+			return kvp[1]
+		}
+	}
+
+	#value := os.Getenv(name)
 	if value == "" {
 		return dfault
 	}
@@ -62,10 +70,17 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 // Stream implements the router.LogAdapter interface.
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
-	strTags := getopt("LOGSTASH_TAGS", "")
-	tags := strToSlice(strTags, ",")
-
 	for m := range logstream {
+
+		for _, kv := range m.container.Config.Env {
+			kvp := strings.SplitN(kv, "=", 2)
+			if len(kvp) == 2 && kvp[0] == "LOGSTASH_TAGS"  {
+				strTags := kvp[1]
+			}
+		}
+
+		//strTags := getopt("LOGSTASH_TAGS", "")
+		tags := strToSlice(strTags, ",")
 
 		dockerInfo := DockerInfo{
 			Name:     m.Container.Name,
