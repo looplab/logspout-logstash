@@ -22,21 +22,14 @@ type LogstashAdapter struct {
 	route *router.Route
 }
 
-func getopt(name, dfault string) string {
-
-	for _, kv := range container.Config.Env {
-		kvp := strings.SplitN(kv, "=", 2)
-		if len(kvp) == 2 && kvp[0] == "LOGSTASH_TAGS"  {
-			return kvp[1]
-		}
-	}
+/*func getopt(name, dfault string) string {
 
 	value := os.Getenv(name)
 	if value == "" {
 		return dfault
 	}
 	return value
-}
+}*/
 
 func strToSlice(str, delimiter string) []string {
 	var sliceStr []string
