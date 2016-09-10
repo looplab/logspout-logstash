@@ -5,10 +5,9 @@ import (
 	"errors"
 	"log"
 	"net"
-	"os"
-	"regexp"
 	"strings"
 
+	"github.com/fsouza/go-dockerclient"
 	"github.com/gliderlabs/logspout/router"
 )
 
@@ -18,27 +17,9 @@ func init() {
 
 // LogstashAdapter is an adapter that streams UDP JSON to Logstash.
 type LogstashAdapter struct {
-	conn  net.Conn
-	route *router.Route
-}
-
-func getopt(name, dfault string) string {
-	value := os.Getenv(name)
-	if value == "" {
-		return dfault
-	}
-	return value
-}
-
-func strToSlice(str, delimiter string) []string {
-	var sliceStr []string
-	matched, _ := regexp.MatchString(delimiter, str)
-	if matched == true {
-		sliceStr = strings.Split(str, delimiter)
-	} else {
-		sliceStr = []string{str}
-	}
-	return sliceStr
+	conn          net.Conn
+	route         *router.Route
+	containerTags map[string][]string
 }
 
 // NewLogstashAdapter creates a LogstashAdapter with UDP as the default transport.
@@ -54,16 +35,32 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 	}
 
 	return &LogstashAdapter{
-		route: route,
-		conn:  conn,
+		route:         route,
+		conn:          conn,
+		containerTags: make(map[string][]string),
 	}, nil
+}
+
+// Get container tags configured with the environment variable LOGSTASH_TAGS
+func GetContainerTags(c *docker.Container, a *LogstashAdapter) []string {
+	if tags, ok := a.containerTags[c.ID]; ok {
+		return tags
+	}
+
+	var tags = []string{}
+	for _, e := range c.Config.Env {
+		if strings.HasPrefix(e, "LOGSTASH_TAGS=") {
+			tags = strings.Split(strings.TrimPrefix(e, "LOGSTASH_TAGS="), ",")
+			break
+		}
+	}
+
+	a.containerTags[c.ID] = tags
+	return tags
 }
 
 // Stream implements the router.LogAdapter interface.
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
-
-	strTags := getopt("LOGSTASH_TAGS", "")
-	tags := strToSlice(strTags, ",")
 
 	for m := range logstream {
 
@@ -73,6 +70,8 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Image:    m.Container.Config.Image,
 			Hostname: m.Container.Config.Hostname,
 		}
+
+		tags := GetContainerTags(m.Container, a)
 
 		var js []byte
 		var data map[string]interface{}
