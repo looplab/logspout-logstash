@@ -44,7 +44,10 @@ input {
 }
 ```
 
-## Available configuration options
+## Logged Container Options
+
+These options may be set on the container generating the log lines, not on the
+logstash-logspout container.
 
 For example, to get into the Logstash event's @tags field, use the ```LOGSTASH_TAGS``` container environment variable. Multiple tags can be passed by using comma-separated values
 
@@ -62,9 +65,19 @@ The output into logstash should be like:
     ],
 ```
 
-
 This table shows all available configurations:
 
 | Environment Variable | Input Type | Default Value |
 |----------------------|------------|---------------|
 | LOGSTASH_TAGS        | array      | None          |
+
+
+## Logstash-logspout Options
+
+These options may be set on the logstash-logspout container itself and impact
+all the log messages processed by the logstash-logspout instance.
+
+| Environment Variable   | Type  | Default | Description |
+|------------------------|-------|---------|-------------|
+| LOGSTASH_GLOBAL_TAGS   | array | None    | List of tags to apply to all messages |
+| LOGSTASH_INCLUDE_LABELS| array | None    | List of labels from remote container to include in log metadata |
