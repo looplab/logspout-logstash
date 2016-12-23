@@ -58,6 +58,7 @@ func TestStreamNotJsonWithoutLogstashTags(t *testing.T) {
 		route:         new(router.Route),
 		conn:          conn,
 		containerTags: make(map[string][]string),
+		globalTags:    []string{},
 	}
 
 	assert.NotNil(adapter)
@@ -114,6 +115,7 @@ func TestStreamNotJsonWithLogstashTags(t *testing.T) {
 		route:         new(router.Route),
 		conn:          conn,
 		containerTags: make(map[string][]string),
+		globalTags:    []string{"global", "foo"},
 	}
 
 	assert.NotNil(adapter)
@@ -151,7 +153,7 @@ func TestStreamNotJsonWithLogstashTags(t *testing.T) {
 	assert.Nil(err)
 
 	assert.Equal("foo bananas", data["message"])
-	assert.Equal([]interface{}{"example", "tags"}, data["tags"])
+	assert.Equal([]interface{}{"example", "tags", "global", "foo"}, data["tags"])
 
 	var dockerInfo map[string]interface{}
 	dockerInfo = data["docker"].(map[string]interface{})
@@ -170,6 +172,7 @@ func TestStreamJsonWithoutLogstashTags(t *testing.T) {
 		route:         new(router.Route),
 		conn:          conn,
 		containerTags: make(map[string][]string),
+		globalTags:    []string{},
 	}
 
 	assert.NotNil(adapter)
@@ -232,6 +235,7 @@ func TestStreamJsonWithLogstashTags(t *testing.T) {
 		route:         new(router.Route),
 		conn:          conn,
 		containerTags: make(map[string][]string),
+		globalTags:    []string{"global", "foo"},
 	}
 
 	assert.NotNil(adapter)
@@ -275,7 +279,7 @@ func TestStreamJsonWithLogstashTags(t *testing.T) {
 	assert.Equal("POST", data["request_method"])
 	assert.Equal("-", data["http_referrer"])
 	assert.Equal("-", data["http_user_agent"])
-	assert.Equal([]interface{}{"example", "tags"}, data["tags"])
+	assert.Equal([]interface{}{"example", "tags", "global", "foo"}, data["tags"])
 
 	var dockerInfo map[string]interface{}
 	dockerInfo = data["docker"].(map[string]interface{})

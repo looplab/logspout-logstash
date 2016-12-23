@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"os"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/gliderlabs/logspout/router"
@@ -15,11 +16,30 @@ func init() {
 	router.AdapterFactories.Register(NewLogstashAdapter, "logstash")
 }
 
+func getopt(name, dfault string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		value = dfault
+	}
+	return value
+}
+
+func filterTags(tags []string) []string {
+	out := []string{}
+	for _, t := range tags {
+		if (strings.TrimSpace(t) != "") {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
 // LogstashAdapter is an adapter that streams UDP JSON to Logstash.
 type LogstashAdapter struct {
 	conn          net.Conn
 	route         *router.Route
 	containerTags map[string][]string
+	globalTags    []string
 }
 
 // NewLogstashAdapter creates a LogstashAdapter with UDP as the default transport.
@@ -38,10 +58,12 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 		route:         route,
 		conn:          conn,
 		containerTags: make(map[string][]string),
+		globalTags:    filterTags(strings.Split(getopt("LOGSTASH_GLOBAL_TAGS", ""), ",")),
 	}, nil
 }
 
 // Get container tags configured with the environment variable LOGSTASH_TAGS
+// ... and global tags configured on the logspout container.
 func GetContainerTags(c *docker.Container, a *LogstashAdapter) []string {
 	if tags, ok := a.containerTags[c.ID]; ok {
 		return tags
@@ -54,6 +76,8 @@ func GetContainerTags(c *docker.Container, a *LogstashAdapter) []string {
 			break
 		}
 	}
+
+	tags = append(tags, a.globalTags...)
 
 	a.containerTags[c.ID] = tags
 	return tags
