@@ -288,3 +288,134 @@ func TestStreamJsonWithLogstashTags(t *testing.T) {
 	assert.Equal("image", dockerInfo["image"])
 	assert.Equal("hostname", dockerInfo["hostname"])
 }
+
+func TestStreamNotJsonWithoutLabels(t *testing.T) {
+	assert := assert.New(t)
+
+	conn := MockConn{}
+
+	adapter := LogstashAdapter{
+		route:         new(router.Route),
+		conn:          conn,
+		containerTags: make(map[string][]string),
+		globalTags:    []string{},
+		includeLabels: []string{},
+	}
+
+	assert.NotNil(adapter)
+
+	logstream := make(chan *router.Message)
+
+	containerConfig := docker.Config{}
+	containerConfig.Image = "image"
+	containerConfig.Hostname = "hostname"
+	containerConfig.Labels = map[string]string{
+		"label.test": "value",
+		"label.foo": "bar",
+		"label.other": "do not include",
+	}
+
+	container := docker.Container{}
+	container.Name = "name"
+	container.ID = "ID"
+	container.Config = &containerConfig
+
+	str := `foo bananas`
+
+	message := router.Message{
+		Container: &container,
+		Source:    "FOOOOO",
+		Data:      str,
+		Time:      time.Now(),
+	}
+
+	go func() {
+		logstream <- &message
+		close(logstream)
+	}()
+
+	adapter.Stream(logstream)
+
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(res), &data)
+	assert.Nil(err)
+
+	assert.Equal("foo bananas", data["message"])
+	assert.Equal([]interface{}{}, data["tags"])
+
+	var dockerInfo map[string]interface{}
+	dockerInfo = data["docker"].(map[string]interface{})
+	assert.Equal("name", dockerInfo["name"])
+	assert.Equal("ID", dockerInfo["id"])
+	assert.Equal("image", dockerInfo["image"])
+	assert.Equal("hostname", dockerInfo["hostname"])
+	assert.Len(dockerInfo["labels"], 0)
+}
+
+func TestStreamNotJsonWithLabels(t *testing.T) {
+	assert := assert.New(t)
+
+	conn := MockConn{}
+
+	adapter := LogstashAdapter{
+		route:         new(router.Route),
+		conn:          conn,
+		containerTags: make(map[string][]string),
+		globalTags:    []string{},
+		includeLabels: []string{"label.test", "label.foo"},
+	}
+
+	assert.NotNil(adapter)
+
+	logstream := make(chan *router.Message)
+
+	containerConfig := docker.Config{}
+	containerConfig.Image = "image"
+	containerConfig.Hostname = "hostname"
+	containerConfig.Labels = map[string]string{
+		"label.test": "value",
+		"label.foo": "bar",
+		"label.other": "do not include",
+	}
+
+	container := docker.Container{}
+	container.Name = "name"
+	container.ID = "ID"
+	container.Config = &containerConfig
+
+	str := `foo bananas`
+
+	message := router.Message{
+		Container: &container,
+		Source:    "FOOOOO",
+		Data:      str,
+		Time:      time.Now(),
+	}
+
+	go func() {
+		logstream <- &message
+		close(logstream)
+	}()
+
+	adapter.Stream(logstream)
+
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(res), &data)
+	assert.Nil(err)
+
+	assert.Equal("foo bananas", data["message"])
+	assert.Equal([]interface{}{}, data["tags"])
+
+	var dockerInfo map[string]interface{}
+	dockerInfo = data["docker"].(map[string]interface{})
+	assert.Equal("name", dockerInfo["name"])
+	assert.Equal("ID", dockerInfo["id"])
+	assert.Equal("image", dockerInfo["image"])
+	assert.Equal("hostname", dockerInfo["hostname"])
+
+	var labels map[string]interface{}
+	labels = dockerInfo["labels"].(map[string]interface{})
+	assert.Equal("value", labels["label.test"])
+	assert.Equal("bar", labels["label.foo"])
+	assert.Len(labels, 2)
+}
