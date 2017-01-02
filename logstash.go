@@ -5,8 +5,8 @@ import (
 	"errors"
 	"log"
 	"net"
-	"strings"
 	"os"
+	"strings"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/gliderlabs/logspout/router"
@@ -50,18 +50,18 @@ func GetContainerTags(c *docker.Container, a *LogstashAdapter) []string {
 		return tags
 	}
 
-	tags := []string {}
-	tags_str := os.Getenv("LOGSTASH_TAGS")
+	tags := []string{}
+	tagsStr := os.Getenv("LOGSTASH_TAGS")
 
 	for _, e := range c.Config.Env {
 		if strings.HasPrefix(e, "LOGSTASH_TAGS=") {
-			tags_str = strings.TrimPrefix(e, "LOGSTASH_TAGS=")
+			tagsStr = strings.TrimPrefix(e, "LOGSTASH_TAGS=")
 			break
 		}
 	}
 
-	if len(tags_str) > 0 {
-		tags = strings.Split(tags_str, ",")
+	if len(tagsStr) > 0 {
+		tags = strings.Split(tagsStr, ",")
 	}
 
 	a.containerTags[c.ID] = tags
@@ -74,29 +74,27 @@ func GetLogstashFields(c *docker.Container, a *LogstashAdapter) map[string]strin
 		return fields
 	}
 
-	fields_str := os.Getenv("LOGSTASH_FIELDS")
-	fields := map[string]string {}
+	fieldsStr := os.Getenv("LOGSTASH_FIELDS")
+	fields := map[string]string{}
 
 	for _, e := range c.Config.Env {
 		if strings.HasPrefix(e, "LOGSTASH_FIELDS=") {
-			fields_str = strings.TrimPrefix(e, "LOGSTASH_FIELDS=")
+			fieldsStr = strings.TrimPrefix(e, "LOGSTASH_FIELDS=")
 		}
 	}
 
-	if len(fields_str) > 0 {
-		for _, f := range strings.Split(fields_str, ",") {
+	if len(fieldsStr) > 0 {
+		for _, f := range strings.Split(fieldsStr, ",") {
 			sp := strings.Split(f, "=")
 			k, v := sp[0], sp[1]
-	    	fields[k] = v 
+			fields[k] = v
 		}
 	}
 
 	a.logstashFields[c.ID] = fields
-	
+
 	return fields
 }
-
-
 
 // Stream implements the router.LogAdapter interface.
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
@@ -118,18 +116,18 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 		// Parse JSON-encoded m.Data
 		if err := json.Unmarshal([]byte(m.Data), &data); err != nil {
-			
-		    msg := make(map[string]interface{}) 
+
+			msg := make(map[string]interface{})
+
+			for k, v := range fields {
+				msg[k] = v
+			}
 
 			msg["message"] = m.Data
 			msg["docker"] = dockerInfo
-		    msg["stream"] = m.Source
-		    msg["tags"] = tags
+			msg["stream"] = m.Source
+			msg["tags"] = tags
 
-			for k, v := range fields { 
-			    msg[k] = v
-			}	
-		    
 			if js, err = json.Marshal(msg); err != nil {
 				// Log error message and continue parsing next line, if marshalling fails
 				log.Println("logstash: could not marshal JSON:", err)
@@ -137,14 +135,14 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			}
 		} else {
 			// The message is already in JSON, add the docker specific fields.
+			for k, v := range fields {
+				data[k] = v
+			}
+
 			data["docker"] = dockerInfo
 			data["tags"] = tags
 			data["stream"] = m.Source
 
-			for k, v := range fields { 
-			    data[k] = v
-			}	
-		    
 			// Return the JSON encoding
 			if js, err = json.Marshal(data); err != nil {
 				// Log error message and continue parsing next line, if marshalling fails

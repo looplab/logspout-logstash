@@ -81,4 +81,4 @@ This table shows all available configurations:
 | Environment Variable | Input Type | Default Value |
 |----------------------|------------|---------------|
 | LOGSTASH_TAGS        | array      | None          |
-| LOGSTAHS_FIELDS      | map        | None          |
+| LOGSTASH_FIELDS      | map        | None          |
