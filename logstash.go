@@ -113,42 +113,28 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 		var js []byte
 		var data map[string]interface{}
+		var err error
 
-		// Parse JSON-encoded m.Data
-		if err := json.Unmarshal([]byte(m.Data), &data); err != nil {
+		// Try to parse JSON-encoded m.Data. If it wasn't JSON, create an empty object
+		// and use the original data as the message.
+		if err = json.Unmarshal([]byte(m.Data), &data); err != nil {
+			data = make(map[string]interface{})
+			data["message"] = m.Data
+		}
 
-			msg := make(map[string]interface{})
+		for k, v := range fields {
+			data[k] = v
+		}
 
-			for k, v := range fields {
-				msg[k] = v
-			}
+		data["docker"] = dockerInfo
+		data["stream"] = m.Source
+		data["tags"] = tags
 
-			msg["message"] = m.Data
-			msg["docker"] = dockerInfo
-			msg["stream"] = m.Source
-			msg["tags"] = tags
-
-			if js, err = json.Marshal(msg); err != nil {
-				// Log error message and continue parsing next line, if marshalling fails
-				log.Println("logstash: could not marshal JSON:", err)
-				continue
-			}
-		} else {
-			// The message is already in JSON, add the docker specific fields.
-			for k, v := range fields {
-				data[k] = v
-			}
-
-			data["docker"] = dockerInfo
-			data["tags"] = tags
-			data["stream"] = m.Source
-
-			// Return the JSON encoding
-			if js, err = json.Marshal(data); err != nil {
-				// Log error message and continue parsing next line, if marshalling fails
-				log.Println("logstash: could not marshal JSON:", err)
-				continue
-			}
+		// Return the JSON encoding
+		if js, err = json.Marshal(data); err != nil {
+			// Log error message and continue parsing next line, if marshalling fails
+			log.Println("logstash: could not marshal JSON:", err)
+			continue
 		}
 
 		// To work with tls and tcp transports via json_lines codec
@@ -166,12 +152,4 @@ type DockerInfo struct {
 	ID       string `json:"id"`
 	Image    string `json:"image"`
 	Hostname string `json:"hostname"`
-}
-
-// LogstashMessage is a simple JSON input to Logstash.
-type LogstashMessage struct {
-	Message string     `json:"message"`
-	Stream  string     `json:"stream"`
-	Docker  DockerInfo `json:"docker"`
-	Tags    []string   `json:"tags"`
 }
