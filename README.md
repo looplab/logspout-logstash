@@ -79,9 +79,31 @@ The output into logstash should be like:
 Both configuration options can be set for every individual container, or for the logspout-logstash
 container itself where they then become a default for all containers if not overridden there.
 
+By setting the environment variable DOCKER_LABELS to a non-empty value, logspout-logstash will add all docker container
+labels as fields:
+```json
+    "docker": {
+        "hostname": "866e2ca94f5f",
+        "id": "866e2ca94f5fe11d57add5a78232c53dfb6187f04f6e150ec15f0ae1e1737731",
+        "image": "centos:7",
+        "labels": {
+            "a_label": "yes",
+            "build-date": "20161214",
+            "license": "GPLv2",
+            "name": "CentOS Base Image",
+            "pleasework": "okay",
+            "some_label_with_dots": "more.dots",
+            "vendor": "CentOS"
+        },
+        "name": "/ecstatic_murdock"
+```
+
+To be compatible with Elasticsearch, dots in labels with be replaced with underscores.
+
 This table shows all available configurations:
 
 | Environment Variable | Input Type | Default Value |
 |----------------------|------------|---------------|
 | LOGSTASH_TAGS        | array      | None          |
 | LOGSTASH_FIELDS      | map        | None          |
+| DOCKER_LABELS        | any        | ""            |
