@@ -108,6 +108,13 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Hostname: m.Container.Config.Hostname,
 		}
 
+		if os.Getenv("DOCKER_LABELS") != "" {
+			dockerInfo.Labels = make(map[string]string)
+			for label, value := range m.Container.Config.Labels {
+				dockerInfo.Labels[strings.Replace(label, ".", "_", -1)] = value
+			}
+		}
+
 		tags := GetContainerTags(m.Container, a)
 		fields := GetLogstashFields(m.Container, a)
 
@@ -148,8 +155,9 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 }
 
 type DockerInfo struct {
-	Name     string `json:"name"`
-	ID       string `json:"id"`
-	Image    string `json:"image"`
-	Hostname string `json:"hostname"`
+	Name     string            `json:"name"`
+	ID       string            `json:"id"`
+	Image    string            `json:"image"`
+	Hostname string            `json:"hostname"`
+	Labels   map[string]string `json:"labels"`
 }
