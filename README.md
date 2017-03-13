@@ -98,7 +98,20 @@ labels as fields:
         "name": "/ecstatic_murdock"
 ```
 
-To be compatible with Elasticsearch, dots in labels with be replaced with underscores.
+To be compatible with Elasticsearch, dots in labels will be replaced with underscores.
+
+### Retrying
+
+Two environment variables control the behaviour of Logspout when the Logstash target isn't available:
+```RETRY_STARTUP``` causes Logspout to retry forever if Logstash isn't available at startup,
+and ```RETRY_SEND``` will retry sending log lines when Logstash becomes unavailable while Logspout is running.
+Note that ```RETRY_SEND``` will work only
+if UDP is used for the log transport and the destination doesn't change;
+in any other case ```RETRY_SEND``` should be disabled, restart and reconnect instead
+and let ```RETRY_STARTUP``` deal with the situation.
+With both retry options, log lines will be lost when Logstash isn't available. Set the
+environment variables to any nonempty value to enable retrying. The default is disabled.
+
 
 This table shows all available configurations:
 
@@ -107,3 +120,5 @@ This table shows all available configurations:
 | LOGSTASH_TAGS        | array      | None          |
 | LOGSTASH_FIELDS      | map        | None          |
 | DOCKER_LABELS        | any        | ""            |
+| RETRY_STARTUP        | any        | ""            |
+| RETRY_SEND           | any        | ""            |

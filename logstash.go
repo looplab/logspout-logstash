@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/gliderlabs/logspout/router"
@@ -31,17 +32,23 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 		return nil, errors.New("unable to find adapter: " + route.Adapter)
 	}
 
-	conn, err := transport.Dial(route.Address, route.Options)
-	if err != nil {
-		return nil, err
-	}
+	for {
+		conn, err := transport.Dial(route.Address, route.Options)
 
-	return &LogstashAdapter{
-		route:          route,
-		conn:           conn,
-		containerTags:  make(map[string][]string),
-		logstashFields: make(map[string]map[string]string),
-	}, nil
+		if err == nil {
+			return &LogstashAdapter{
+				route:          route,
+				conn:           conn,
+				containerTags:  make(map[string][]string),
+				logstashFields: make(map[string]map[string]string),
+			}, nil
+		}
+		if os.Getenv("RETRY_STARTUP") == "" {
+			return nil, err
+		}
+		log.Println("Retrying:", err)
+		time.Sleep(2 * time.Second)
+	}
 }
 
 // Get container tags configured with the environment variable LOGSTASH_TAGS
@@ -147,9 +154,18 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		// To work with tls and tcp transports via json_lines codec
 		js = append(js, byte('\n'))
 
-		if _, err := a.conn.Write(js); err != nil {
-			// There is no retry option implemented yet
-			log.Fatal("logstash: could not write:", err)
+		for {
+			_, err := a.conn.Write(js)
+
+			if err == nil {
+				break
+			}
+
+			if os.Getenv("RETRY_SEND") == "" {
+				log.Fatal("logstash: could not write:", err)
+			} else {
+				time.Sleep(2 * time.Second)
+			}
 		}
 	}
 }
