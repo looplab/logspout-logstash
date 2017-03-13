@@ -43,10 +43,10 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 				logstashFields: make(map[string]map[string]string),
 			}, nil
 		}
-		if os.Getenv("LOGSTASH_RETRY") == "" {
+		if os.Getenv("RETRY_STARTUP") == "" {
 			return nil, err
 		}
-		log.Println("Retrying", err)
+		log.Println("Retrying:", err)
 		time.Sleep(2 * time.Second)
 	}
 }
@@ -155,17 +155,15 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		js = append(js, byte('\n'))
 
 		for {
-			log.Println("sending...")
 			_, err := a.conn.Write(js)
 
 			if err == nil {
 				break
 			}
 
-			if os.Getenv("LOGSTASH_RETRY") == "" {
+			if os.Getenv("RETRY_SEND") == "" {
 				log.Fatal("logstash: could not write:", err)
 			} else {
-				log.Println("Retrying", err)
 				time.Sleep(2 * time.Second)
 			}
 		}
