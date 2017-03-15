@@ -131,7 +131,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 		// Try to parse JSON-encoded m.Data. If it wasn't JSON, create an empty object
 		// and use the original data as the message.
-		if err = json.Unmarshal([]byte(m.Data), &data); err != nil {
+		if err = json.Unmarshal([]byte(m.Data), &data); err != nil || data == nil {
 			data = make(map[string]interface{})
 			data["message"] = m.Data
 		}
