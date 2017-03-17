@@ -96,7 +96,7 @@ func TestStreamNullData(t *testing.T) {
 	err := json.Unmarshal([]byte(res), &data)
 	assert.Nil(err)
 
-	assert.Equal("foo bananas", data["message"])
+	assert.Equal("null", data["message"])
 	assert.Equal([]interface{}{"example", "tags"}, data["tags"])
 
 	var dockerInfo map[string]interface{}
