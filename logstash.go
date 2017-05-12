@@ -20,6 +20,7 @@ func init() {
 // LogstashAdapter is an adapter that streams UDP JSON to Logstash.
 type LogstashAdapter struct {
 	conn           net.Conn
+	transport      router.AdapterTransport
 	route          *router.Route
 	containerTags  map[string][]string
 	logstashFields map[string]map[string]string
@@ -38,6 +39,7 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 		if err == nil {
 			return &LogstashAdapter{
 				route:          route,
+				transport:      transport,
 				conn:           conn,
 				containerTags:  make(map[string][]string),
 				logstashFields: make(map[string]map[string]string),
@@ -156,15 +158,28 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 		for {
 			_, err := a.conn.Write(js)
-
 			if err == nil {
+				log.Printf("Successfully sent log %v", js)
+				log.Printf("err value %v", err)
 				break
 			}
 
 			if os.Getenv("RETRY_SEND") == "" {
 				log.Fatal("logstash: could not write:", err)
-			} else {
-				time.Sleep(2 * time.Second)
+			}
+
+			log.Printf("Error while writing %v", js)
+
+			log.Printf("logstash: write failed, retrying in 2 seconds: %v", err)
+			time.Sleep(2 * time.Second)
+			if e, ok := err.(net.Error); ok && !e.Temporary() {
+				log.Printf("logstash: non-temporary network error – attempting to reconnect")
+				conn, err := a.transport.Dial(a.route.Address, a.route.Options)
+				if err == nil {
+					a.conn = conn
+				} else {
+					log.Printf("logstash: reconnect failed: %v", err)
+				}
 			}
 		}
 	}
