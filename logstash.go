@@ -11,6 +11,7 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/gliderlabs/logspout/router"
+	"strconv"
 )
 
 func init() {
@@ -157,10 +158,20 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		js = append(js, byte('\n'))
 
 		for {
+			if a.route.AdapterTransport(a.route.Adapter) == "tcp" && os.Getenv("TCP_TIMEOUT") != "" {
+				conn, _ := a.conn.(*net.TCPConn)
+				env_tcp_timeout, _ := strconv.ParseInt(os.Getenv("TCP_TIMEOUT"), 10, 32)
+				tcp_timeout := time.Now().Add(time.Duration(env_tcp_timeout)*time.Second)
+				conn.SetDeadline(tcp_timeout)
+				conn.SetKeepAlive(true)
+				conn.SetKeepAlivePeriod(1*time.Second)
+				conn.SetNoDelay(true)
+				conn.SetWriteDeadline(tcp_timeout)
+				a.conn = conn
+			}
+
 			_, err := a.conn.Write(js)
 			if err == nil {
-				log.Printf("Successfully sent log %v", js)
-				log.Printf("err value %v", err)
 				break
 			}
 
@@ -168,12 +179,11 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 				log.Fatal("logstash: could not write:", err)
 			}
 
-			log.Printf("Error while writing %v", js)
-
+			log.Printf("logstash: error while writing %v", data["message"])
 			log.Printf("logstash: write failed, retrying in 2 seconds: %v", err)
 			time.Sleep(2 * time.Second)
-			if e, ok := err.(net.Error); ok && !e.Temporary() {
-				log.Printf("logstash: non-temporary network error – attempting to reconnect")
+			if e, ok := err.(net.Error); ok && (!e.Temporary() || e.Timeout()) {
+				log.Print("logstash: non-temporary network error – attempting to reconnect")
 				conn, err := a.transport.Dial(a.route.Address, a.route.Options)
 				if err == nil {
 					a.conn = conn
