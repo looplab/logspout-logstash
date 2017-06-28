@@ -11,6 +11,7 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/gliderlabs/logspout/router"
+	"strconv"
 )
 
 func init() {
@@ -20,6 +21,7 @@ func init() {
 // LogstashAdapter is an adapter that streams UDP JSON to Logstash.
 type LogstashAdapter struct {
 	conn           net.Conn
+	transport      router.AdapterTransport
 	route          *router.Route
 	containerTags  map[string][]string
 	logstashFields map[string]map[string]string
@@ -38,6 +40,7 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 		if err == nil {
 			return &LogstashAdapter{
 				route:          route,
+				transport:      transport,
 				conn:           conn,
 				containerTags:  make(map[string][]string),
 				logstashFields: make(map[string]map[string]string),
@@ -155,16 +158,38 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 		js = append(js, byte('\n'))
 
 		for {
-			_, err := a.conn.Write(js)
+			if a.route.AdapterTransport(a.route.Adapter) == "tcp" && os.Getenv("TCP_TIMEOUT") != "" {
+				conn, _ := a.conn.(*net.TCPConn)
+				env_tcp_timeout, _ := strconv.ParseInt(os.Getenv("TCP_TIMEOUT"), 10, 32)
+				tcp_timeout := time.Now().Add(time.Duration(env_tcp_timeout)*time.Second)
+				conn.SetDeadline(tcp_timeout)
+				conn.SetKeepAlive(true)
+				conn.SetKeepAlivePeriod(1*time.Second)
+				conn.SetNoDelay(true)
+				conn.SetWriteDeadline(tcp_timeout)
+				a.conn = conn
+			}
 
+			_, err := a.conn.Write(js)
 			if err == nil {
 				break
 			}
 
 			if os.Getenv("RETRY_SEND") == "" {
 				log.Fatal("logstash: could not write:", err)
-			} else {
-				time.Sleep(2 * time.Second)
+			}
+
+			log.Printf("logstash: error while writing %v", data["message"])
+			log.Printf("logstash: write failed, retrying in 2 seconds: %v", err)
+			time.Sleep(2 * time.Second)
+			if e, ok := err.(net.Error); ok && (!e.Temporary() || e.Timeout()) {
+				log.Print("logstash: non-temporary network error – attempting to reconnect")
+				conn, err := a.transport.Dial(a.route.Address, a.route.Options)
+				if err == nil {
+					a.conn = conn
+				} else {
+					log.Printf("logstash: reconnect failed: %v", err)
+				}
 			}
 		}
 	}
