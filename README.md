@@ -122,3 +122,4 @@ This table shows all available configurations:
 | DOCKER_LABELS        | any        | ""            |
 | RETRY_STARTUP        | any        | ""            |
 | RETRY_SEND           | any        | ""            |
+| DECODE_JSON_LOGS     | bool       | true          |
