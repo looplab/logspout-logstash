@@ -19,10 +19,11 @@ func init() {
 
 // LogstashAdapter is an adapter that streams UDP JSON to Logstash.
 type LogstashAdapter struct {
-	conn           net.Conn
-	route          *router.Route
-	containerTags  map[string][]string
-	logstashFields map[string]map[string]string
+	conn             net.Conn
+	route            *router.Route
+	containerTags    map[string][]string
+	logstashFields   map[string]map[string]string
+	decodeJsonLogs   map[string]bool
 }
 
 // NewLogstashAdapter creates a LogstashAdapter with UDP as the default transport.
@@ -41,6 +42,7 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 				conn:           conn,
 				containerTags:  make(map[string][]string),
 				logstashFields: make(map[string]map[string]string),
+				decodeJsonLogs: make(map[string]bool),
 			}, nil
 		}
 		if os.Getenv("RETRY_STARTUP") == "" {
@@ -103,6 +105,28 @@ func GetLogstashFields(c *docker.Container, a *LogstashAdapter) map[string]strin
 	return fields
 }
 
+// Get boolean indicating whether json logs should be decoded (or added as message),
+// configured with the environment variable DECODE_JSON_LOGS
+func IsDecodeJsonLogs(c *docker.Container, a *LogstashAdapter) bool {
+	if decodeJsonLogs, ok := a.decodeJsonLogs[c.ID]; ok {
+		return decodeJsonLogs
+	}
+
+	decodeJsonLogsStr := os.Getenv("DECODE_JSON_LOGS")
+
+	for _, e := range c.Config.Env {
+		if strings.HasPrefix(e, "DECODE_JSON_LOGS=") {
+			decodeJsonLogsStr = strings.TrimPrefix(e, "DECODE_JSON_LOGS=")
+		}
+	}
+
+	decodeJsonLogs := decodeJsonLogsStr != "false"
+
+	a.decodeJsonLogs[c.ID] = decodeJsonLogs
+
+	return decodeJsonLogs
+}
+
 // Stream implements the router.LogAdapter interface.
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
@@ -131,7 +155,10 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
 		// Try to parse JSON-encoded m.Data. If it wasn't JSON, create an empty object
 		// and use the original data as the message.
-		if err = json.Unmarshal([]byte(m.Data), &data); err != nil || data == nil {
+		if IsDecodeJsonLogs(m.Container, a) {
+			err = json.Unmarshal([]byte(m.Data), &data)
+		}
+		if err != nil || data == nil {
 			data = make(map[string]interface{})
 			data["message"] = m.Data
 		}

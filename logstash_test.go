@@ -60,6 +60,7 @@ func TestStreamNullData(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -117,6 +118,7 @@ func TestStreamNotJsonWithoutLogstashTags(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -174,6 +176,7 @@ func TestStreamNotJsonWithLogstashTags(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -231,6 +234,7 @@ func TestStreamJsonWithoutLogstashTags(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -294,6 +298,7 @@ func TestStreamJsonWithLogstashTags(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -357,6 +362,7 @@ func TestStreamNotJsonWithLogstashFields(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -416,6 +422,7 @@ func TestStreamJsonWithLogstashFields(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -483,6 +490,7 @@ func TestStreamNotJsonWithLogstashFieldsWithDefault(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -544,6 +552,7 @@ func TestStreamJsonWithLogstashFieldsWithDefault(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -611,6 +620,7 @@ func TestStreamNotJsonWithLogstashTagsWithDefault(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -670,6 +680,7 @@ func TestStreamJsonWithLogstashTagsWithDefault(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -733,6 +744,7 @@ func TestStreamJsonWithLogstashFieldsAndBlacklist(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -801,6 +813,7 @@ func TestStreamJsonWithLogstashFieldsWithDefaultAndBlacklist(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -870,6 +883,7 @@ func TestStreamJsonLabelsDisabled(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -939,6 +953,7 @@ func TestStreamJsonLabelsEnabled(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -1015,6 +1030,7 @@ func TestStreamJsonLabelsEnabledButEmpty(t *testing.T) {
 		conn:           conn,
 		containerTags:  make(map[string][]string),
 		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
 	}
 
 	assert.NotNil(adapter)
@@ -1073,4 +1089,62 @@ func TestStreamJsonLabelsEnabledButEmpty(t *testing.T) {
 
 	assert.Equal(true, ok)
 	assert.Nil(dockerLabels["log"])
+}
+
+func TestStreamJsonWithDecodeJsonLogsFalse(t *testing.T) {
+	assert := assert.New(t)
+
+	conn := MockConn{}
+
+	adapter := LogstashAdapter{
+		route:          new(router.Route),
+		conn:           conn,
+		containerTags:  make(map[string][]string),
+		logstashFields: make(map[string]map[string]string),
+		decodeJsonLogs: make(map[string]bool),
+	}
+
+	assert.NotNil(adapter)
+
+	logstream := make(chan *router.Message)
+
+	containerConfig := docker.Config{}
+	containerConfig.Image = "image"
+	containerConfig.Hostname = "hostname"
+	containerConfig.Env = []string{"NON_LOGSTASH_TAGS=not,logstash", "DECODE_JSON_LOGS=false"}
+
+	container := docker.Container{}
+	container.Name = "name"
+	container.ID = "ID"
+	container.Config = &containerConfig
+
+	str := `{ "remote_user": "-", "body_bytes_sent": "25", "request_time": "0.821", "status": "200", "request_method": "POST", "http_referrer": "-", "http_user_agent": "-" }`
+
+	message := router.Message{
+		Container: &container,
+		Source:    "FOOOOO",
+		Data:      str,
+		Time:      time.Now(),
+	}
+
+	go func() {
+		logstream <- &message
+		close(logstream)
+	}()
+
+	adapter.Stream(logstream)
+
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(res), &data)
+	assert.Nil(err)
+
+	assert.Equal(str, data["message"])
+	assert.Equal([]interface{}{}, data["tags"])
+
+	var dockerInfo map[string]interface{}
+	dockerInfo = data["docker"].(map[string]interface{})
+	assert.Equal("name", dockerInfo["name"])
+	assert.Equal("ID", dockerInfo["id"])
+	assert.Equal("image", dockerInfo["image"])
+	assert.Equal("hostname", dockerInfo["hostname"])
 }
