@@ -3,6 +3,7 @@ package logstash
 import (
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -12,6 +13,8 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	"github.com/gliderlabs/logspout/router"
 )
+
+var hostname	string;
 
 func init() {
 	router.AdapterFactories.Register(NewLogstashAdapter, "logstash")
@@ -32,6 +35,8 @@ func NewLogstashAdapter(route *router.Route) (router.LogAdapter, error) {
 	if !found {
 		return nil, errors.New("unable to find adapter: " + route.Adapter)
 	}
+
+	GetPredefinedHostname()
 
 	for {
 		conn, err := transport.Dial(route.Address, route.Options)
@@ -105,6 +110,18 @@ func GetLogstashFields(c *docker.Container, a *LogstashAdapter) map[string]strin
 	return fields
 }
 
+// Get docker hostname (can be override by file or ENV)
+func GetPredefinedHostname() {
+	content, err := ioutil.ReadFile("/etc/host_hostname")
+	if err == nil && len(content) > 0 {
+		hostname = strings.TrimRight(string(content), "\r\n")
+	} else if os.Getenv("SYSLOG_HOSTNAME") != "" {
+		hostname = os.Getenv("SYSLOG_HOSTNAME")
+	} else {
+		hostname = ""
+	}
+}
+
 // Get boolean indicating whether json logs should be decoded (or added as message),
 // configured with the environment variable DECODE_JSON_LOGS
 func IsDecodeJsonLogs(c *docker.Container, a *LogstashAdapter) bool {
@@ -137,6 +154,10 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			ID:       m.Container.ID,
 			Image:    m.Container.Config.Image,
 			Hostname: m.Container.Config.Hostname,
+		}
+
+		if hostname != "" {
+			dockerInfo.Hostname = hostname
 		}
 
 		if os.Getenv("DOCKER_LABELS") != "" {
