@@ -130,6 +130,7 @@ func IsDecodeJsonLogs(c *docker.Container, a *LogstashAdapter) bool {
 // Stream implements the router.LogAdapter interface.
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
+	logLoop:
 	for m := range logstream {
 
 		dockerInfo := DockerInfo{
@@ -137,6 +138,16 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			ID:       m.Container.ID,
 			Image:    m.Container.Config.Image,
 			Hostname: m.Container.Config.Hostname,
+		}
+
+		// Ff INCLUDE_CONTAINERS is set, check if this container is included
+		if includeContainers := os.Getenv("INCLUDE_CONTAINERS"); includeContainers != "" {
+			for _, containerName := strings.Split(includeContainers, ",") {
+				if dockerInfo.Name == containerName {
+					// skip this
+					continue logLoop
+				}
+			}
 		}
 
 		if os.Getenv("DOCKER_LABELS") != "" {
