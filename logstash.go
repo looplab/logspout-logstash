@@ -140,7 +140,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Hostname: m.Container.Config.Hostname,
 		}
 
-		// Ff INCLUDE_CONTAINERS is set, check if this container is included
+		// If INCLUDE_CONTAINERS is set, check if this container is included
 		if includeContainers := os.Getenv("INCLUDE_CONTAINERS"); includeContainers != "" {
 			for _, containerName := strings.Split(includeContainers, ",") {
 				if dockerInfo.Name == containerName {
