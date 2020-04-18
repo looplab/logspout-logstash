@@ -100,6 +100,8 @@ labels as fields:
 
 To be compatible with Elasticsearch, dots in labels will be replaced with underscores.
 
+By setting `INCLUDE_CONTAINERS` you can specify a comma separated list of container names to only get logs from those containers.
+
 ### Retrying
 
 Two environment variables control the behaviour of Logspout when the Logstash target isn't available:
@@ -119,6 +121,7 @@ This table shows all available configurations:
 |----------------------|------------|---------------|
 | LOGSTASH_TAGS        | array      | None          |
 | LOGSTASH_FIELDS      | map        | None          |
+| INCLUDE_CONTAINERS   | array      | None          |
 | DOCKER_LABELS        | any        | ""            |
 | RETRY_STARTUP        | any        | ""            |
 | RETRY_SEND           | any        | ""            |
