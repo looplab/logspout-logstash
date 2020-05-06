@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/gliderlabs/logspout/router"
 )
 
@@ -19,11 +19,11 @@ func init() {
 
 // LogstashAdapter is an adapter that streams UDP JSON to Logstash.
 type LogstashAdapter struct {
-	conn             net.Conn
-	route            *router.Route
-	containerTags    map[string][]string
-	logstashFields   map[string]map[string]string
-	decodeJsonLogs   map[string]bool
+	conn           net.Conn
+	route          *router.Route
+	containerTags  map[string][]string
+	logstashFields map[string]map[string]string
+	decodeJsonLogs map[string]bool
 }
 
 // NewLogstashAdapter creates a LogstashAdapter with UDP as the default transport.
@@ -130,7 +130,6 @@ func IsDecodeJsonLogs(c *docker.Container, a *LogstashAdapter) bool {
 // Stream implements the router.LogAdapter interface.
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
-	logLoop:
 	for m := range logstream {
 
 		dockerInfo := DockerInfo{
@@ -140,14 +139,9 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Hostname: m.Container.Config.Hostname,
 		}
 
-		// If INCLUDE_CONTAINERS is set, check if this container is included
-		if includeContainers := os.Getenv("INCLUDE_CONTAINERS"); includeContainers != "" {
-			for _, containerName := strings.Split(includeContainers, ",") {
-				if dockerInfo.Name == containerName {
-					// skip this
-					continue logLoop
-				}
-			}
+		// Check if we are sending logs for this container
+		if !containerIncluded(dockerInfo.Name) {
+			continue
 		}
 
 		if os.Getenv("DOCKER_LABELS") != "" {
@@ -206,6 +200,20 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			}
 		}
 	}
+}
+
+// containerIncluded Returns true if this container is in INCLUDE_CONTAINERS, or not env var is set
+func containerIncluded(containerName string) bool {
+	if includeContainers := os.Getenv("INCLUDE_CONTAINERS"); includeContainers != "" {
+		for _, containerName := range strings.Split(includeContainers, ",") {
+			if containerName == containerName {
+				// This contain is included, send this log
+				return true
+			}
+		}
+		return false
+	}
+	return true
 }
 
 type DockerInfo struct {
