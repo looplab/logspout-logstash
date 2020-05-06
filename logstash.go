@@ -203,10 +203,10 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 }
 
 // containerIncluded Returns true if this container is in INCLUDE_CONTAINERS, or not env var is set
-func containerIncluded(containerName string) bool {
+func containerIncluded(inputContainerName string) bool {
 	if includeContainers := os.Getenv("INCLUDE_CONTAINERS"); includeContainers != "" {
 		for _, containerName := range strings.Split(includeContainers, ",") {
-			if containerName == containerName {
+			if inputContainerName == containerName {
 				// This contain is included, send this log
 				return true
 			}
