@@ -100,7 +100,7 @@ labels as fields:
 
 To be compatible with Elasticsearch, dots in labels will be replaced with underscores.
 
-By setting `INCLUDE_CONTAINERS` you can specify a comma separated list of container names to only get logs from those containers.
+By setting `INCLUDE_CONTAINERS` you can specify a comma separated list of container names to only get logs from those containers.  You can also set `INCLUDE_CONTAINERS_REGEX` to use regex to describe the containers to include.
 
 ### Retrying
 
