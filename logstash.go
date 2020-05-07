@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -210,6 +211,17 @@ func containerIncluded(inputContainerName string) bool {
 				// This contain is included, send this log
 				return true
 			}
+		}
+		return false
+	} else if includeContainers := os.Getenv("INCLUDE_CONTAINERS_REGEX"); includeContainers != "" {
+		compiled, err := regexp.Compile(includeContainers)
+		if err != nil {
+			// Return true by default
+			return true
+		}
+		if compiled.MatchString(inputContainerName) {
+			// This contain is included, send this log
+			return true
 		}
 		return false
 	}
