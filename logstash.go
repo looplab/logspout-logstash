@@ -3,6 +3,7 @@ package logstash
 import (
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -127,6 +128,17 @@ func IsDecodeJsonLogs(c *docker.Container, a *LogstashAdapter) bool {
 	return decodeJsonLogs
 }
 
+// Get hostname of container, searching first for /etc/host_hostname, otherwise
+// using the hostname assigned to the container (typically container ID).
+func GetContainerHostname(c *docker.Container) string {
+	content, err := ioutil.ReadFile("/etc/host_hostname")
+	if err == nil && len(content) > 0 {
+		return strings.Trim(string(content), "\r\n")
+	}
+
+	return c.Config.Hostname
+}
+
 // Stream implements the router.LogAdapter interface.
 func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 
@@ -137,7 +149,7 @@ func (a *LogstashAdapter) Stream(logstream chan *router.Message) {
 			Name:     m.Container.Name,
 			ID:       m.Container.ID,
 			Image:    m.Container.Config.Image,
-			Hostname: m.Container.Config.Hostname,
+			Hostname: GetContainerHostname(m.Container),
 		}
 
 		// If INCLUDE_CONTAINERS is set, check if this container is included
