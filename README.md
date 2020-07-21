@@ -102,6 +102,37 @@ To be compatible with Elasticsearch, dots in labels will be replaced with unders
 
 By setting `INCLUDE_CONTAINERS` you can specify a comma separated list of container names to only get logs from those containers.
 
+### Using Logspout-Logstash in a swarm
+
+In a swarm, logspout is best deployed as a global service. To support this mode of deployment, the logstash adapter will look for the file `/etc/host_hostname` and, if the file exists and it is not empty, will configure the hostname field with the content of this file. You can then use a volume mount to map a file on the docker hosts with the file `/etc/host_hostname` in the container. The sample compose file below illustrates how this can be done:
+
+```
+version: "3"
+services:
+  logspout:
+    image: localhost/logspout-logstash:latest
+    volumes:
+      # Logspout reads this in and attaches it to the log
+      - /etc/hostname:/etc/host_hostname:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # IP and port for logstash host
+      - ROUTE_URIS=logstash://host:port
+      # Include all docker labels
+      - DOCKER_LABELS=true
+      # Add environment field to all logs sent to logstash
+      - LOGSTASH_FIELDS=environment=${NODE_ENV}
+    deploy:
+      mode: global
+      resources:
+        limits:
+          cpus: '0.20'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+```
+
 ### Retrying
 
 Two environment variables control the behaviour of Logspout when the Logstash target isn't available:
